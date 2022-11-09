@@ -1,35 +1,44 @@
-# Semesterprojekt
+# WaterOrNot
 
-A Particle project named Semesterprojekt
+## Table of contents
+* [Introduction](#introduction)
+* [Hardware requirements](#hardware-requirements)
+<!-- * [Technologies](#technologies) -->
+* [Setup](#setup)
 
-## Welcome to your project!
+## Introduction
+This project aims to predict when or when not to water your outdoor plants. It uses soil moisture content and weather data to predict a reasonable time to water plants. If the soil moisture content is high enough and rain is in the near future, it may be unwise to waste water.
 
-Every new Particle project is composed of 3 important elements that you'll see have been created in your project directory for Semesterprojekt.
+## Hardware requirements
+Looking at the problem it is very obvious to specify that we require a sensor capable of reading the soil moisture content, a controller that can access weather data, a power source and last but not least this all needs to be efficient and low power. Furthermore all this must be affordable and keep the final unit price low.
 
-#### ```/src``` folder:  
-This is the source folder that contains the firmware files for your project. It should *not* be renamed. 
-Anything that is in this folder when you compile your project will be sent to our compile service and compiled into a firmware binary for the Particle device that you have targeted.
+### Controller
+Prior to beginning this project, the controller has already been chosen. The project will be using a Particle Argon development board kit, this microcontroller is 3V3 logic and has input for a LiPo battery as well as an onboard LiPo charger module.
 
-If your application contains multiple files, they should all be included in the `src` folder. If your firmware depends on Particle libraries, those dependencies are specified in the `project.properties` file referenced below.
+### Sensor for soil moisture
+Before researching sensors, let's specify a list of requirements
+- **Supply voltage**: preferably 3V3 to avoid further switching losses
+- **Range**: should be able to read in the range of completely dry to completely soaked soil (or just plain water)
+- **Operating temperatures**: Outside temperatures during the summer, let's say 10°C to 40°C
+- **Response time**: the sensor should be kept at a minimum to lower the power consumption during reads
+- **Cost**: Low, this filters out any industrial-grade sensors
+<!-- To do: Research and select sensor -->
 
-#### ```.ino``` file:
-This file is the firmware that will run as the primary application on your Particle device. It contains a `setup()` and `loop()` function, and can be written in Wiring or C/C++. For more information about using the Particle firmware API to create firmware for your Particle device, refer to the [Firmware Reference](https://docs.particle.io/reference/firmware/) section of the Particle documentation.
+### Power source
+This project is going to be placed outside. For it to be mobile, we require a wireless power source. This could be anything from wind to solar or a button cell battery to a super capacitor.
+As a starting point, this project will be using a LiPo battery. The reason behind this is because it's easy. I have a few laying around with capacities between 400 and 800 mAh and the microcontroller supports easy connection and charging of them. I will, however, like to set up a requirement which will later be determined if these batteries can fulfill it.
+- **Capacity**: Should be able to supply the setup with power for at least two months
+- **Replacable**: Definitely, this will allow you to keep it running, simply switch out with a fully charged battery
 
-#### ```project.properties``` file:  
-This is the file that specifies the name and version number of the libraries that your project depends on. Dependencies are added automatically to your `project.properties` file when you add a library to a project using the `particle library add` command in the CLI or add a library in the Desktop IDE.
+### Low power
+Lorem
 
-## Adding additional files to your project
-
-#### Projects with multiple sources
-If you would like add additional files to your application, they should be added to the `/src` folder. All files in the `/src` folder will be sent to the Particle Cloud to produce a compiled binary.
-
-#### Projects with external libraries
-If your project includes a library that has not been registered in the Particle libraries system, you should create a new folder named `/lib/<libraryname>/src` under `/<project dir>` and add the `.h`, `.cpp` & `library.properties` files for your library there. Read the [Firmware Libraries guide](https://docs.particle.io/guide/tools-and-features/libraries/) for more details on how to develop libraries. Note that all contents of the `/lib` folder and subfolders will also be sent to the Cloud for compilation.
-
-## Compiling your project
-
-When you're ready to compile your project, make sure you have the correct Particle device target selected and run `particle compile <platform>` in the CLI or click the Compile button in the Desktop IDE. The following files in your project folder will be sent to the compile service:
-
-- Everything in the `/src` folder, including your `.ino` application file
-- The `project.properties` file for your project
-- Any libraries stored under `lib/<libraryname>/src`
+<!---
+## Technologies
+Project is created with:
+* Particle Argon development board
+* DS3231 RTC development board
+* Capacitive soil moisture sensor
+--->
+## Setup
+TBD
