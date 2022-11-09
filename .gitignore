@@ -1,2 +1,7 @@
 # Ignore sensitive information
 src/WiFiCredentials.h
+
+# Project files
+/target
+
+/.vscode
