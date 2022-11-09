@@ -1,1 +1,2 @@
-/src/WiFiCredentials.h
+# Ignore sensitive information
+src/WiFiCredentials.h
