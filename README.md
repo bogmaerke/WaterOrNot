@@ -47,9 +47,9 @@ TBD
 ### To do
 Test:
 Power consumption:
-  Ultra low power mode without DS3231
-  vs.
-  Hibernate and a DS3231
+&nbsp;&nbsp;Ultra low power mode without DS3231
+&nbsp;&nbsp;vs.
+&nbsp;&nbsp;Hibernate and a DS3231
 
 Reliability of capacitive soil moisture sensor
 &nbsp;&nbsp;Are readings consistant?
