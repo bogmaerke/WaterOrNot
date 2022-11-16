@@ -34,7 +34,8 @@ void interruptHandler();
 #define LOW_MOISTURE 50
 #define SIGNIFICANT_PERCIPITATION 2.0
 #define EXTENDED_INFO 1
-#define HBRNATE // Uncomment or delete to use ULP
+#define DS3231 // Uncomment or delete to use ULP
+
 RTC_DS3231 rtc;
 LEDStatus statusOff;
 LEDStatus blinkRGB(RGB_COLOR_RED, LED_PATTERN_BLINK, LED_SPEED_NORMAL, LED_PRIORITY_CRITICAL);
@@ -46,8 +47,10 @@ SYSTEM_THREAD(ENABLED);
 
 unsigned int timeStart = 0;
 unsigned int alarmFired = 0;
-retained float futurePercipitation;
-retained int soilMoisture;
+float futurePercipitation;
+float VBAT_ACTUAL;
+int soilMoisture;
+int VBAT;
 bool state = false;
 volatile bool gotWeatherData = false;
 String requestString = "\r";
@@ -82,14 +85,12 @@ void setup()
     pinMode(SENSOR, INPUT);
     pinMode(VBAT_ADC, INPUT);
 
-    while (!rtc.begin())
-        ;
-
 #ifdef DBG
     blinkRGB.setActive();
 #endif
-
-#ifdef HBRNATE
+#ifdef DS3231
+    while (!rtc.begin())
+        ;
     while (rtc.lostPower())
     {
 
@@ -108,11 +109,6 @@ void setup()
         while (!rtc.setAlarm2(dt, DS3231_A2_Hour))
             ;
     }
-    config.mode(SystemSleepMode::HIBERNATE);
-#else
-    config.mode(SystemSleepMode::ULTRA_LOW_POWER);
-#endif
-    config.gpio(INT_INPUT, FALLING);
 #ifdef DBG
     blinkRGB.setActive(false);
 #endif
@@ -126,8 +122,26 @@ void setup()
         alarmFired = 2;
         rtc.clearAlarm(2);
     }
+    config.mode(SystemSleepMode::HIBERNATE);
+#else
+    config.mode(SystemSleepMode::ULTRA_LOW_POWER);
+    config.duration(480min);
+#endif
+    config.gpio(INT_INPUT, FALLING);
+
+    // Sensor read
     soilMoisture = analogRead(SENSOR);
     soilMoisture = map(soilMoisture, SENSOR_DRY, SENSOR_WET, 0, 100);
+
+    // Read VBAT
+    digitalWrite(VBAT_CTRL, HIGH);
+    VBAT = analogRead(VBAT_ADC);
+    digitalWrite(VBAT_CTRL, LOW);
+
+    // Calculate voltage
+    float ADC_RES = 3.3 / 4096;
+    VBAT_ACTUAL = VBAT * ADC_RES * 5.8;
+
     // Wait for cloud connection
     while (!Particle.connected())
         ;
@@ -160,7 +174,7 @@ void loop()
         {
             if (EXTENDED_INFO)
             {
-                Particle.publish("pushbullet", "Low chance of percipitation, water plants!\nR" + String(futurePercipitation, 1) + " M" + String(soilMoisture) + " A" + String(alarmFired), 60, PRIVATE);
+                Particle.publish("pushbullet", "Low chance of percipitation, water plants!\nR" + String(futurePercipitation, 1) + " M" + String(soilMoisture) + " B" + String(VBAT_ACTUAL, 2), 60, PRIVATE);
             }
             else
             {

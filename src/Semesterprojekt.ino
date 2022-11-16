@@ -36,8 +36,10 @@ SYSTEM_THREAD(ENABLED);
 
 unsigned int timeStart = 0;
 unsigned int alarmFired = 0;
-retained float futurePercipitation;
-retained int soilMoisture;
+float futurePercipitation;
+float VBAT_ACTUAL;
+int soilMoisture;
+int VBAT;
 bool state = false;
 volatile bool gotWeatherData = false;
 String requestString = "\r";
@@ -115,8 +117,20 @@ void setup()
     config.duration(480min);
 #endif
     config.gpio(INT_INPUT, FALLING);
+
+    // Sensor read
     soilMoisture = analogRead(SENSOR);
     soilMoisture = map(soilMoisture, SENSOR_DRY, SENSOR_WET, 0, 100);
+
+    // Read VBAT
+    digitalWrite(VBAT_CTRL, HIGH);
+    VBAT = analogRead(VBAT_ADC);
+    digitalWrite(VBAT_CTRL, LOW);
+
+    // Calculate voltage
+    float ADC_RES = 3.3 / 4096;
+    VBAT_ACTUAL = VBAT * ADC_RES * 5.75;
+
     // Wait for cloud connection
     while (!Particle.connected())
         ;
@@ -149,7 +163,7 @@ void loop()
         {
             if (EXTENDED_INFO)
             {
-                Particle.publish("pushbullet", "Low chance of percipitation, water plants!\nR" + String(futurePercipitation, 1) + " M" + String(soilMoisture) + " A" + String(alarmFired), 60, PRIVATE);
+                Particle.publish("pushbullet", "Low chance of percipitation, water plants!\nR" + String(futurePercipitation, 1) + " M" + String(soilMoisture) + " B" + String(VBAT_ACTUAL, 2), 60, PRIVATE);
             }
             else
             {
