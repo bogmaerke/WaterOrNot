@@ -3,8 +3,9 @@
 ## Table of contents
 * [Introduction](#introduction)
 * [Hardware requirements](#hardware-requirements)
-<!-- * [Technologies](#technologies) -->
+* [Technologies](#technologies)
 * [Setup](#setup)
+* [To do](#to-do)
 
 ## Introduction
 This project aims to predict when or when not to water your outdoor plants. It uses soil moisture content and weather data to predict a reasonable time to water plants. If the soil moisture content is high enough and rain is in the near future, it may be unwise to waste water.
@@ -33,12 +34,25 @@ As a starting point, this project will be using a LiPo battery. The reason behin
 ### Low power
 Lorem
 
-<!---
+
 ## Technologies
 Project is created with:
 * Particle Argon development board
 * DS3231 RTC development board
 * Capacitive soil moisture sensor
---->
+
 ## Setup
 TBD
+
+### To do
+Test:
+Power consumption:
+  Ultra low power mode without DS3231
+  vs.
+  Hibernate and a DS3231
+
+Reliability of capacitive soil moisture sensor
+  Are readings consistant?
+    Do they fluctuate?
+    Do they diminish over time due to wear?
+  Is the range of the sensor adequate for the range dry soil to soaked soil?
