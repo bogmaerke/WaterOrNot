@@ -23,8 +23,11 @@ void interruptHandler();
 #define LOW_MOISTURE 50
 #define SIGNIFICANT_PERCIPITATION 2.0
 #define EXTENDED_INFO 1
+#define DS3231 // Uncomment or delete to use ULP
+
 RTC_DS3231 rtc;
-LEDStatus status;
+LEDStatus statusOff;
+LEDStatus blinkRGB(RGB_COLOR_RED, LED_PATTERN_BLINK, LED_SPEED_NORMAL, LED_PRIORITY_CRITICAL);
 SystemSleepConfiguration config;
 
 Timer timeoutTimer(30000, forceSleep, true);
@@ -32,6 +35,7 @@ SYSTEM_MODE(AUTOMATIC); // Call setup() before cloud connection is up
 SYSTEM_THREAD(ENABLED);
 
 unsigned int timeStart = 0;
+unsigned int alarmFired = 0;
 retained float futurePercipitation;
 retained int soilMoisture;
 bool state = false;
@@ -49,9 +53,9 @@ void setup()
 #endif
     timeoutTimer.start();
     gotWeatherData = false;
-    status.setPriority(LED_PRIORITY_CRITICAL);
-    status.setActive();
-    status.off();
+    statusOff.setPriority(LED_PRIORITY_CRITICAL);
+    statusOff.setActive();
+    statusOff.off();
     // Set unused pins as output
     for (unsigned int i = 0; i < sizeof(PINS) / sizeof(PINS[0]); i++)
     {
@@ -68,18 +72,22 @@ void setup()
     pinMode(SENSOR, INPUT);
     pinMode(VBAT_ADC, INPUT);
 
+#ifdef DBG
+    blinkRGB.setActive();
+#endif
+#ifdef DS3231
     while (!rtc.begin())
         ;
-
-    if (rtc.lostPower())
+    while (rtc.lostPower())
     {
+
         rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
         rtc.disable32K();
         rtc.clearAlarm(1);
         rtc.clearAlarm(2);
         rtc.writeSqwPinMode(DS3231_OFF);
+        rtc.disableAlarm(1);
         rtc.disableAlarm(2);
-
         DateTime dt = DateTime((F(__DATE__), "16:00:00"));
         // DS3231_A1_Hour to turn on once a day.
         while (!rtc.setAlarm1(dt, DS3231_A1_Hour)) // Debug: DS3231_A1_Second
@@ -88,13 +96,25 @@ void setup()
         while (!rtc.setAlarm2(dt, DS3231_A2_Hour))
             ;
     }
-    config.mode(SystemSleepMode::HIBERNATE);
-    config.gpio(INT_INPUT, FALLING);
-    if (rtc.alarmFired(1) || rtc.alarmFired(2))
+#ifdef DBG
+    blinkRGB.setActive(false);
+#endif
+    if (rtc.alarmFired(1))
     {
+        alarmFired = 1;
         rtc.clearAlarm(1);
+    }
+    if (rtc.alarmFired(2))
+    {
+        alarmFired = 2;
         rtc.clearAlarm(2);
     }
+    config.mode(SystemSleepMode::HIBERNATE);
+#else
+    config.mode(SystemSleepMode::ULTRA_LOW_POWER);
+    config.duration(480min);
+#endif
+    config.gpio(INT_INPUT, FALLING);
     soilMoisture = analogRead(SENSOR);
     soilMoisture = map(soilMoisture, SENSOR_DRY, SENSOR_WET, 0, 100);
     // Wait for cloud connection
@@ -129,7 +149,7 @@ void loop()
         {
             if (EXTENDED_INFO)
             {
-                Particle.publish("pushbullet", "Low chance of percipitation, water plants!\nR" + String(futurePercipitation, 1) + " M" + String(soilMoisture), 60, PRIVATE);
+                Particle.publish("pushbullet", "Low chance of percipitation, water plants!\nR" + String(futurePercipitation, 1) + " M" + String(soilMoisture) + " A" + String(alarmFired), 60, PRIVATE);
             }
             else
             {
