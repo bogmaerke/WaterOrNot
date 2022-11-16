@@ -9,16 +9,18 @@
  * Description:
  * Author: Mikkel Pavia
  * Date:
+ *
+ * Notifications: https://www.hackster.io/gusgonnet/add-push-notifications-to-your-hardware-41fa5e
  */
 #include "..\lib\RTClibraryDS3231_DL\src\RTClibraryDS3231_DL.h"
 #include "WiFiCredentials.h"
+//#define DBG
+
 void setup();
 void loop();
 void myHandler(const char *event, const char *data);
 void forceSleep();
-#line 9 "c:/particle_workspace/Semesterprojekt/src/Semesterprojekt.ino"
-#define DBG
-
+#line 13 "c:/particle_workspace/Semesterprojekt/src/Semesterprojekt.ino"
 void interruptHandler();
 
 #define LED D7
@@ -29,18 +31,19 @@ void interruptHandler();
 #define VBAT_CTRL D2
 #define SENSOR_DRY 3400
 #define SENSOR_WET 1400
-
+#define LOW_MOISTURE 50
+#define SIGNIFICANT_PERCIPITATION 2.0
+#define EXTENDED_INFO 1
 RTC_DS3231 rtc;
 LEDStatus status;
 SystemSleepConfiguration config;
 
-// Serial1LogHandler logHandler(9600, LOG_LEVEL_NONE);
 Timer timeoutTimer(30000, forceSleep, true);
-SYSTEM_MODE(AUTOMATIC); // Call setup() and loop() before cloud connection is up
+SYSTEM_MODE(AUTOMATIC); // Call setup() before cloud connection is up
 SYSTEM_THREAD(ENABLED);
 
 unsigned int timeStart = 0;
-retained float lastPercipitation;
+retained float futurePercipitation;
 retained int soilMoisture;
 bool state = false;
 volatile bool gotWeatherData = false;
@@ -52,8 +55,9 @@ void setup()
 {
     // Set WiFi credentials to office WiFi
     WiFi.setCredentials(WiFiSSID, WiFiPW);
-    // Redacted
+#ifdef DBG
     timeStart = millis();
+#endif
     timeoutTimer.start();
     gotWeatherData = false;
     status.setPriority(LED_PRIORITY_CRITICAL);
@@ -88,14 +92,11 @@ void setup()
         rtc.disableAlarm(2);
 
         DateTime dt = DateTime((F(__DATE__), "16:00:00"));
-        while (!rtc.setAlarm1(
-            dt,
-            DS3231_A1_Second)) // DS3231_A1_Hour to turn on once a day.
+        // DS3231_A1_Hour to turn on once a day.
+        while (!rtc.setAlarm1(dt, DS3231_A1_Hour)) // Debug: DS3231_A1_Second
             ;
         dt = DateTime((F(__DATE__), "08:00:00"));
-        while (!rtc.setAlarm2(
-            dt,
-            DS3231_A2_Hour)) // DS3231_A1_Hour to turn on once a day.
+        while (!rtc.setAlarm2(dt, DS3231_A2_Hour))
             ;
     }
     config.mode(SystemSleepMode::HIBERNATE);
@@ -128,16 +129,24 @@ void loop()
 {
     if (gotWeatherData)
     {
+#ifdef DBG
         unsigned int totalTime = millis() - timeStart;
         char str[80];
-        sprintf(str, "P%.1f, SM%d, UP%u", lastPercipitation, soilMoisture, totalTime);
+        sprintf(str, "P%.1f, SM%d, UP%u", futurePercipitation, soilMoisture, totalTime);
         Particle.publish("DATA", str, PRIVATE);
-        delay(200);
-        // Particle.disconnect();
-        // WiFi.off();
-        // NFC.off();
-        // Wire.end();
-        // SPI.end();
+#endif
+        // Notify user to water plants
+        if (soilMoisture <= LOW_MOISTURE && futurePercipitation <= SIGNIFICANT_PERCIPITATION)
+        {
+            if (EXTENDED_INFO)
+            {
+                Particle.publish("pushbullet", "Low chance of percipitation, water plants!\nR" + String(futurePercipitation, 1) + " M" + String(soilMoisture), 60, PRIVATE);
+            }
+            else
+            {
+                Particle.publish("pushbullet", "Low chance of percipitation, water plants!", 60, PRIVATE);
+            }
+        }
         System.sleep(config);
     }
 }
@@ -148,7 +157,7 @@ void myHandler(const char *event, const char *data)
     // https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=x&lon=y
     char d[100];
     strcpy(d, data);
-    lastPercipitation = atof(data);
+    futurePercipitation = atof(data);
     gotWeatherData = true;
 }
 
