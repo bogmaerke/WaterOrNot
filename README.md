@@ -52,7 +52,7 @@ Power consumption:
   Hibernate and a DS3231
 
 Reliability of capacitive soil moisture sensor
-  Are readings consistant?
-    Do they fluctuate?
-    Do they diminish over time due to wear?
-  Is the range of the sensor adequate for the range dry soil to soaked soil?
+&nbsp;&nbsp;Are readings consistant?
+&nbsp;&nbsp;&nbsp;&nbsp;Do they fluctuate?
+&nbsp;&nbsp;&nbsp;&nbsp;Do they diminish over time due to wear?
+&nbsp;&nbsp;Is the range of the sensor adequate for the range dry soil to soaked soil?
