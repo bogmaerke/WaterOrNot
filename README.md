@@ -45,14 +45,14 @@ Project is created with:
 TBD
 
 ### To do
-Test:
-Power consumption:
-&nbsp;&nbsp;Ultra low power mode without DS3231
-&nbsp;&nbsp;vs.
-&nbsp;&nbsp;Hibernate and a DS3231
+Test:  
+Power consumption:  
+&nbsp;&nbsp;Ultra low power mode without DS3231  
+&nbsp;&nbsp;vs.  
+&nbsp;&nbsp;Hibernate and a DS3231  
 
-Reliability of capacitive soil moisture sensor
-&nbsp;&nbsp;Are readings consistant?
-&nbsp;&nbsp;&nbsp;&nbsp;Do they fluctuate?
-&nbsp;&nbsp;&nbsp;&nbsp;Do they diminish over time due to wear?
-&nbsp;&nbsp;Is the range of the sensor adequate for the range dry soil to soaked soil?
+Reliability of capacitive soil moisture sensor  
+&nbsp;&nbsp;Are readings consistant?  
+&nbsp;&nbsp;&nbsp;&nbsp;Do they fluctuate?  
+&nbsp;&nbsp;&nbsp;&nbsp;Do they diminish over time due to wear?  
+&nbsp;&nbsp;Is the range of the sensor adequate for the range dry soil to soaked soil?  
