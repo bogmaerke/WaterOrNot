@@ -187,8 +187,5 @@ void myHandler(const char *event, const char *data)
 void forceSleep()
 {
     Particle.publish("FORCE_SLEEP", "\r", PRIVATE);
-    delay(200);
-    Particle.disconnect();
-    WiFi.off();
     System.sleep(config);
 }
