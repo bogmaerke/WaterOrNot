@@ -6,7 +6,6 @@
  *
  * Notifications: https://www.hackster.io/gusgonnet/add-push-notifications-to-your-hardware-41fa5e
  */
-#include "WiFiCredentials.h"
 #define DBG
 
 #define EXTENDED_INFO 1
@@ -38,6 +37,7 @@ SYSTEM_THREAD(ENABLED);
 #ifdef DBG
 unsigned int totalTime = 0;
 char str[80];
+
 SerialLogHandler logHandler(115200);
 const char *STATE_NAMES[8] = {
     "COLD_START",
@@ -55,7 +55,6 @@ float futurePercipitation;
 double VBAT_ACTUAL;
 int soilMoisture;
 int VBAT;
-volatile bool gotWeatherData = false;
 typedef enum STATES
 {
     COLD_START,
@@ -88,8 +87,6 @@ void loop()
     switch (currentState)
     {
     case COLD_START:
-        // Set WiFi credentials to office WiFi
-        WiFi.setCredentials(WiFiSSID, WiFiPW);
 #ifdef DBG
         timeStart = millis();
 #endif
@@ -205,10 +202,8 @@ void loop()
 
 void subHandler(const char *event, const char *data)
 {
-    // Get weather data
+    // Handle incoming weather data from subscription
     // https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=x&lon=y
-    char d[100];
-    strcpy(d, data);
     futurePercipitation = atof(data);
     currentState = HANDLE_DATA;
 }
