@@ -23,14 +23,14 @@ void interruptHandler();
 #define LOW_MOISTURE 50
 #define SIGNIFICANT_PERCIPITATION 2.0
 #define EXTENDED_INFO 1
-#define DS3231 // Uncomment or delete to use ULP
+//#define DS3231 // Uncomment or delete to use ULP
 
 RTC_DS3231 rtc;
 LEDStatus statusOff;
 LEDStatus blinkRGB(RGB_COLOR_RED, LED_PATTERN_BLINK, LED_SPEED_NORMAL, LED_PRIORITY_CRITICAL);
 SystemSleepConfiguration config;
 
-Timer timeoutTimer(30000, forceSleep, true);
+Timer timeoutTimer(45000, forceSleep, true);
 SYSTEM_MODE(AUTOMATIC); // Call setup() before cloud connection is up
 SYSTEM_THREAD(ENABLED);
 
@@ -74,10 +74,10 @@ void setup()
     pinMode(SENSOR, INPUT);
     pinMode(VBAT_ADC, INPUT);
 
+#ifdef DS3231
 #ifdef DBG
     blinkRGB.setActive();
 #endif
-#ifdef DS3231
     while (!rtc.begin())
         ;
     while (rtc.lostPower())
@@ -91,7 +91,7 @@ void setup()
         rtc.disableAlarm(1);
         rtc.disableAlarm(2);
         DateTime dt = DateTime((F(__DATE__), "16:00:00"));
-        // DS3231_A1_Hour to turn on once a day.
+
         while (!rtc.setAlarm1(dt, DS3231_A1_Hour)) // Debug: DS3231_A1_Second
             ;
         dt = DateTime((F(__DATE__), "08:00:00"));
@@ -101,22 +101,17 @@ void setup()
 #ifdef DBG
     blinkRGB.setActive(false);
 #endif
-    if (rtc.alarmFired(1))
+    if (rtc.alarmFired(1) || rtc.alarmFired(2))
     {
-        alarmFired = 1;
         rtc.clearAlarm(1);
-    }
-    if (rtc.alarmFired(2))
-    {
-        alarmFired = 2;
         rtc.clearAlarm(2);
     }
     config.mode(SystemSleepMode::HIBERNATE);
+    config.gpio(INT_INPUT, FALLING);
 #else
     config.mode(SystemSleepMode::ULTRA_LOW_POWER);
-    config.duration(480min);
+    config.duration(15min); // 480 min for 8 hours
 #endif
-    config.gpio(INT_INPUT, FALLING);
 
     // Sensor read
     soilMoisture = analogRead(SENSOR);
@@ -129,7 +124,7 @@ void setup()
 
     // Calculate voltage
     float ADC_RES = 3.3 / 4096;
-    VBAT_ACTUAL = VBAT * ADC_RES * 5.75;
+    VBAT_ACTUAL = VBAT * ADC_RES * 5.6;
 
     // Wait for cloud connection
     while (!Particle.connected())
@@ -163,11 +158,11 @@ void loop()
         {
             if (EXTENDED_INFO)
             {
-                Particle.publish("pushbullet", "Low chance of percipitation, water plants!\nR" + String(futurePercipitation, 1) + " M" + String(soilMoisture) + " B" + String(VBAT_ACTUAL, 2), 60, PRIVATE);
+                Particle.publish("pushbullet", "Low chance of percipitation, water plants!\nR" + String(futurePercipitation, 1) + " M" + String(soilMoisture) + " B" + String(VBAT_ACTUAL, 2), PRIVATE);
             }
             else
             {
-                Particle.publish("pushbullet", "Low chance of percipitation, water plants!", 60, PRIVATE);
+                Particle.publish("pushbullet", "Low chance of percipitation, water plants!", PRIVATE);
             }
         }
         System.sleep(config);
