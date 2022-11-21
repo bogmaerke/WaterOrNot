@@ -38,7 +38,6 @@ Lorem
 ## Technologies
 Project is created with:
 * Particle Argon development board
-* DS3231 RTC development board
 * Capacitive soil moisture sensor
 
 ## Setup
@@ -46,10 +45,6 @@ TBD
 
 ### To do
 Test:  
-Power consumption:  
-&nbsp;&nbsp;&nbsp;&nbsp;Ultra low power mode without DS3231  
-&nbsp;&nbsp;&nbsp;&nbsp;vs.  
-&nbsp;&nbsp;&nbsp;&nbsp;Hibernate and a DS3231  
 
 Reliability of capacitive soil moisture sensor  
 &nbsp;&nbsp;&nbsp;&nbsp;Are readings consistant?  
