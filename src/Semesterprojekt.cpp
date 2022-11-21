@@ -35,6 +35,8 @@ void interruptHandler();
 #define SIGNIFICANT_PERCIPITATION 2.0
 #define EXTENDED_INFO 1
 //#define DS3231 // Uncomment or delete to use ULP
+#define GOOD_MOISTURE 65 // Moisture content in percent
+#define VBAT_LOW 3.5
 
 RTC_DS3231 rtc;
 LEDStatus statusOff;
@@ -135,7 +137,11 @@ void setup()
 
     // Calculate voltage
     float ADC_RES = 3.3 / 4096;
-    VBAT_ACTUAL = VBAT * ADC_RES * 5.7;
+    VBAT_ACTUAL = VBAT * ADC_RES * 5.6;
+
+    // If soil moisture is high, go to sleep immediately, don't even wait for cloud connection
+    if (soilMoisture >= GOOD_MOISTURE && VBAT_ACTUAL > VBAT_LOW)
+        System.sleep(config);
 
     // Wait for cloud connection
     while (!Particle.connected())
@@ -148,7 +154,7 @@ void setup()
     {
     }
     bool res;
-    res = Particle.publish("GET_WEATHER_DATA", requestString, PRIVATE);
+    res = Particle.publish("GET_WEATHER_DATA", PRIVATE);
     if (!res)
     {
     }
@@ -192,6 +198,6 @@ void myHandler(const char *event, const char *data)
 
 void forceSleep()
 {
-    Particle.publish("FORCE_SLEEP", "\r", PRIVATE);
+    Particle.publish("FORCE_SLEEP", PRIVATE);
     System.sleep(config);
 }

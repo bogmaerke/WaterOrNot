@@ -44,7 +44,6 @@ int soilMoisture;
 int VBAT;
 bool state = false;
 volatile bool gotWeatherData = false;
-String requestString = "\r";
 
 pin_t PINS[] = {D3, D6, D9};
 
@@ -143,7 +142,7 @@ void setup()
     {
     }
     bool res;
-    res = Particle.publish("GET_WEATHER_DATA", requestString, PRIVATE);
+    res = Particle.publish("GET_WEATHER_DATA", PRIVATE);
     if (!res)
     {
     }
@@ -187,6 +186,6 @@ void myHandler(const char *event, const char *data)
 
 void forceSleep()
 {
-    Particle.publish("FORCE_SLEEP", "\r", PRIVATE);
+    Particle.publish("FORCE_SLEEP", PRIVATE);
     System.sleep(config);
 }
