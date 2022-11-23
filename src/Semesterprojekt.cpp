@@ -7,17 +7,16 @@
 /*
  * Project: Semesterprojekt
  * Description:
- * Author: Mikkel Pavia
+ * Author: bogmaerke
  * Date:
  *
  * Notifications: https://www.hackster.io/gusgonnet/add-push-notifications-to-your-hardware-41fa5e
  */
-#include "WiFiCredentials.h"
 void setup();
 void loop();
 void subHandler(const char *event, const char *data);
 void forceSleep();
-#line 10 "c:/particle_workspace/Semesterprojekt/src/Semesterprojekt.ino"
+#line 9 "c:/particle_workspace/Semesterprojekt/src/Semesterprojekt.ino"
 #define DBG
 
 #define EXTENDED_INFO 1
@@ -49,6 +48,7 @@ SYSTEM_THREAD(ENABLED);
 #ifdef DBG
 unsigned int totalTime = 0;
 char str[80];
+
 SerialLogHandler logHandler(115200);
 const char *STATE_NAMES[8] = {
     "COLD_START",
@@ -66,7 +66,6 @@ float futurePercipitation;
 double VBAT_ACTUAL;
 int soilMoisture;
 int VBAT;
-volatile bool gotWeatherData = false;
 typedef enum STATES
 {
     COLD_START,
@@ -99,8 +98,6 @@ void loop()
     switch (currentState)
     {
     case COLD_START:
-        // Set WiFi credentials to office WiFi
-        WiFi.setCredentials(WiFiSSID, WiFiPW);
 #ifdef DBG
         timeStart = millis();
 #endif
@@ -123,7 +120,7 @@ void loop()
         pinMode(VBAT_ADC, INPUT);
 
         config.mode(SystemSleepMode::ULTRA_LOW_POWER);
-        config.duration(1min); // 480 min for 8 hours
+        config.duration(15min); // 480 min for 8 hours
         currentState = READ_SENSORS;
         break;
 
@@ -139,10 +136,12 @@ void loop()
         // Calculate voltage
         VBAT_ACTUAL = VBAT * ADC_RES;
         VBAT_ACTUAL *= VOLTAGE_DIVIDER_SCALE_FACTOR;
-        // If soil moisture is high, go to sleep immediately, don't even wait for cloud connection
+// If soil moisture is high, go to sleep immediately, don't even wait for cloud connection
+#ifndef DBG
         if (soilMoisture >= LOW_MOISTURE && VBAT_ACTUAL > VBAT_LOW)
             currentState = SLEEP;
         else
+#endif
             currentState = CONNECTED;
         break;
 
@@ -203,7 +202,9 @@ void loop()
         break;
 
     case RETURN_FROM_SLEEP:
+#ifdef DBG
         timeStart = millis();
+#endif
         timeoutTimer.reset();
         currentState = READ_SENSORS;
         break;
@@ -216,10 +217,8 @@ void loop()
 
 void subHandler(const char *event, const char *data)
 {
-    // Get weather data
+    // Handle incoming weather data from subscription
     // https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=x&lon=y
-    char d[100];
-    strcpy(d, data);
     futurePercipitation = atof(data);
     currentState = HANDLE_DATA;
 }

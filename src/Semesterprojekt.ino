@@ -1,7 +1,7 @@
 /*
  * Project: Semesterprojekt
  * Description:
- * Author: Mikkel Pavia
+ * Author: bogmaerke
  * Date:
  *
  * Notifications: https://www.hackster.io/gusgonnet/add-push-notifications-to-your-hardware-41fa5e
@@ -20,6 +20,7 @@
 
 // Pins
 #define SENSOR A3
+#define SENSOR_CTRL D3
 #define VBAT_ADC A2
 #define VBAT_CTRL D2
 
@@ -68,7 +69,7 @@ typedef enum STATES
 
 } state_t;
 volatile state_t currentState = COLD_START, lastState;
-pin_t PINS[] = {D3, D4, D5, D6, D7, D8, D9};
+pin_t PINS[] = {D4, D5, D6, D7, D8, D9};
 
 void setup()
 {
@@ -80,20 +81,23 @@ void loop()
     if (currentState != lastState)
     {
         Log.info("\n\t\tSTATE: " + String(STATE_NAMES[currentState]) + "\n");
-        if (Particle.connected())
-            Particle.publish("STATE", STATE_NAMES[currentState], PRIVATE);
     }
 #endif
+
     switch (currentState)
     {
     case COLD_START:
 #ifdef DBG
         timeStart = millis();
 #endif
+        // Resets and starts timer
         timeoutTimer.reset();
+
+        // Turn off status LED
         statusOff.setPriority(LED_PRIORITY_CRITICAL);
         statusOff.setActive();
         statusOff.off();
+
         // Set unused pins as output
         for (unsigned int i = 0; i < sizeof(PINS) / sizeof(PINS[0]); i++)
         {
@@ -101,22 +105,29 @@ void loop()
             digitalWrite(PINS[i], LOW);
         }
 
-        // Control pin for VBAT
+        // Control pin for sensors
         pinMode(VBAT_CTRL, OUTPUT);
+        pinMode(SENSOR_CTRL, OUTPUT);
 
         // Setup sensors
         pinMode(SENSOR, INPUT);
         pinMode(VBAT_ADC, INPUT);
 
+        // Sleep mode setup
         config.mode(SystemSleepMode::ULTRA_LOW_POWER);
-        config.duration(1min); // 480 min for 8 hours
+        config.duration(15min); // 480 min for 8 hours
         currentState = READ_SENSORS;
         break;
 
     case READ_SENSORS:
         // Sensor read
+        digitalWrite(SENSOR_CTRL, HIGH);
         soilMoisture = analogRead(SENSOR);
+        digitalWrite(SENSOR_CTRL, LOW);
+
+        // Convert ADC 0-3V3 to percentage
         soilMoisture = map(soilMoisture, SENSOR_DRY, SENSOR_WET, 0, 100);
+
         // Read VBAT
         digitalWrite(VBAT_CTRL, HIGH);
         VBAT = analogRead(VBAT_ADC);
@@ -125,10 +136,13 @@ void loop()
         // Calculate voltage
         VBAT_ACTUAL = VBAT * ADC_RES;
         VBAT_ACTUAL *= VOLTAGE_DIVIDER_SCALE_FACTOR;
-        // If soil moisture is high, go to sleep immediately, don't even wait for cloud connection
+
+// If soil moisture is high, go to sleep immediately, don't even wait for cloud connection
+#ifndef DBG
         if (soilMoisture >= LOW_MOISTURE && VBAT_ACTUAL > VBAT_LOW)
             currentState = SLEEP;
         else
+#endif
             currentState = CONNECTED;
         break;
 
@@ -144,6 +158,8 @@ void loop()
         {
         }
         bool res;
+
+        // Request data
         res = Particle.publish("GET_WEATHER_DATA", PRIVATE);
         if (!res)
         {
@@ -156,11 +172,14 @@ void loop()
         break;
 
     case HANDLE_DATA:
+
+        // Send debug data to pushbullet
 #ifdef DBG
         totalTime = millis() - timeStart;
         sprintf(str, "%s P%.1f, SM%d, UP%u B%.2lf", Time.timeStr().c_str(), futurePercipitation, soilMoisture, totalTime, VBAT_ACTUAL);
         Particle.publish("pushbullet", str, PRIVATE);
 #else
+        // Send notification to pushbullet if...
         if (soilMoisture <= LOW_MOISTURE && futurePercipitation <= SIGNIFICANT_PERCIPITATION)
         {
             if (EXTENDED_INFO)
@@ -189,7 +208,9 @@ void loop()
         break;
 
     case RETURN_FROM_SLEEP:
+#ifdef DBG
         timeStart = millis();
+#endif
         timeoutTimer.reset();
         currentState = READ_SENSORS;
         break;
